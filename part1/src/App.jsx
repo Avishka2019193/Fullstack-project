@@ -16,7 +16,7 @@ const Hello = (props) => {
 const Footer = () => {
   return (
     <div>
-      greeting app created by <a href='https://github.com/Avishka2019193'>Avishka</a>
+      greetings app created by <a href='https://github.com/Avishka2019193'>Avishka</a>
     </div>
   )
 }
