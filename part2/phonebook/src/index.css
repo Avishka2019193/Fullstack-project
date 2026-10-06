@@ -49,11 +49,12 @@ input {
   font-size: 1em;
   font-family: inherit;
 }
+
 button {
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid #ccc;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
+  padding: 0.3em 0.7em;
+  font-size: 0.85em;
   font-weight: 500;
   font-family: inherit;
   background-color: #f0f0f0;
@@ -61,6 +62,7 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
 button:hover {
   border-color: #646cff;
 }
@@ -80,4 +82,23 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+.success {
+  color: #2e7d32;
+  background: #e6f4ea;
+  border: 2px solid #2e7d32;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 1em;
+}
+
+.error {
+  color: #c62828;
+  background: #fdecea;
+  border: 2px solid #c62828;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 10px;
+  font-size: 1em;
 }
