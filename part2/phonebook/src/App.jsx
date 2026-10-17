@@ -41,37 +41,6 @@ const App = () => {
     setFilter(event.target.value)
   }
 
-  
-  
-  const addPerson = (event) => {
-    event.preventDefault()
-
-    const nameExists = persons.find(person => person.name === newName)
-
-    if (nameExists) {
-      window.alert(`${newName} is already added to phonebook`)
-      return
-    }
-
-    const personObject = {
-      name: newName,
-      number: newNumber
-    }
-
-    personService
-      .createperson(personObject)
-      .then(returnPerson => {
-        setPersons(persons.concat(returnPerson))
-        setNewName('')
-        setNewNumber('')
-        notify(`Added ${returnPerson.name}`)
-      })
-      .catch(() => {
-        notify(`Failed to add ${newName}`, 'error')
-      })
-  }
-
-  /* --- Full version with update support (for exercise 3.17) ---
 
   const addPerson = (event) => {
     event.preventDefault()
@@ -130,8 +99,7 @@ const App = () => {
       })
   }
 
-   */
-
+  
   const personsToShow = persons.filter(person =>
     person.name.toLowerCase().includes(filter.toLowerCase())
   )

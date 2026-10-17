@@ -65,29 +65,66 @@ app.post("/api/persons", (request, response) => {
   });
 });
 
-app.get("/info", (request, response) => {
-  const now = new Date();
-  response.send(`
-    <p>Phonebook has info for ${persons.length} people</p>
-    <p>${now}</p>
-  `);
+app.get("/info", (request, response, next) => {
+  Person.countDocuments({})
+    .then((count) => {
+      response.send(`
+        <p>Phonebook has info for ${count} people</p>
+        <p>${new Date()}</p>
+      `);
+    })
+    .catch(next);
 });
-app.get("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  const person = persons.find((p) => p.id === id);
 
-  if (person) {
-    response.json(person);
-  } else {
-    response.status(404).end();
+app.get("/api/persons/:id", (request, response, next) => {
+  Person.findById(request.params.id)
+    .then((person) => {
+      if (person) {
+        response.json(person);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch(next);
+});
+app.put("/api/persons/:id", (request, response, next) => {
+  const { name, number } = request.body;
+
+  Person.findByIdAndUpdate(request.params.id, { name, number }, { new: true })
+    .then((updatedPerson) => {
+      if (updatedPerson) {
+        response.json(updatedPerson);
+      } else {
+        response.status(404).end();
+      }
+    })
+    .catch(next);
+});
+app.delete("/api/persons/:id", (request, response, next) => {
+  Person.findByIdAndDelete(request.params.id)
+    .then(() => response.status(204).end())
+    .catch(next);
+});
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
+
+const errorHandler = (error, request, response, next) => {
+  console.log(error.message);
+
+  if (error.name === "CastError") {
+    return response.status(400).send({ error: "malformatted id" });
   }
-});
-app.delete("/api/persons/:id", (request, response) => {
-  const id = request.params.id;
-  persons = persons.filter((p) => p.id !== id);
+  if (error.name === "ValidationError") {
+    return response.status(400).json({ error: error.message });
+  }
 
-  response.status(204).end();
-});
+  next(error);
+};
+
+app.use(unknownEndpoint);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
