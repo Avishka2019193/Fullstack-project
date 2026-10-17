@@ -1,28 +1,40 @@
-import dns from "node:dns";
-import mongoose from "mongoose";
+import dns from 'node:dns'
+import mongoose from 'mongoose'
 
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+dns.setServers(['8.8.8.8', '1.1.1.1'])
 
-mongoose.set("strictQuery", false);
+mongoose.set('strictQuery', false)
 
-const url = process.env.MONGODB_URI;
+const url = process.env.MONGODB_URI
 
 mongoose
   .connect(url)
-  .then(() => console.log("connected to MongoDB"))
-  .catch((error) => console.log("error connecting to MongoDB:", error.message));
+  .then(() => console.log('connected to MongoDB'))
+  .catch((error) => console.log('error connecting to MongoDB:', error.message))
 
 const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
-});
-
-personSchema.set("toJSON", {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString();
-    delete returnedObject._id;
-    delete returnedObject.__v;
+  name: {
+    type: String,
+    minLength: 3,
+    required: true,
   },
-});
+  number: {
+    type: String,
+    minLength: 8,
+    required: true,
+    validate: {
+      validator: (value) => /^\d{2,3}-\d+$/.test(value),
+      message: (props) => `${props.value} is not a valid phone number`,
+    },
+  },
+})
 
-export default mongoose.model("Person", personSchema);
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  },
+})
+
+export default mongoose.model('Person', personSchema)

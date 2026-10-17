@@ -59,25 +59,29 @@ const App = () => {
         number: newNumber
       }
 
-      personService
-        .updateperson(nameExists.id, updatedPerson)
-        .then(returnedPerson => {
-          setPersons(
-            persons.map(person =>
-              person.id !== nameExists.id ? person : returnedPerson
-            )
+     personService
+      .updateperson(nameExists.id, updatedPerson)
+      .then(returnedPerson => {
+        setPersons(
+          persons.map(person =>
+            person.id !== nameExists.id ? person : returnedPerson
           )
-          setNewName('')
-          setNewNumber('')
-          notify(`Updated ${returnedPerson.name}'s number`)
-        })
-        .catch(() => {
+        )
+        setNewName('')
+        setNewNumber('')
+        notify(`Updated ${returnedPerson.name}'s number`)
+      })
+      .catch(error => {
+        if (error.response?.status === 404) {
           notify(
             `Information of '${nameExists.name}' has already been removed from server`,
             'error'
           )
           setPersons(persons.filter(person => person.id !== nameExists.id))
-        })
+        } else {
+          notify(error.response?.data?.error || 'Failed to update number', 'error')
+        }
+      })
       return
     }
 
@@ -86,17 +90,17 @@ const App = () => {
       number: newNumber
     }
 
-    personService
-      .createperson(personObject)
-      .then(returnPerson => {
-        setPersons(persons.concat(returnPerson))
-        setNewName('')
-        setNewNumber('')
-        notify(`Added ${returnPerson.name}`)
-      })
-      .catch(() => {
-        notify(`Failed to add ${newName}`, 'error')
-      })
+  personService
+    .createperson(personObject)
+    .then(returnPerson => {
+      setPersons(persons.concat(returnPerson))
+      setNewName('')
+      setNewNumber('')
+      notify(`Added ${returnPerson.name}`)
+    })
+    .catch(error => {
+      notify(error.response?.data?.error || 'Failed to add person', 'error')
+    })
   }
 
   

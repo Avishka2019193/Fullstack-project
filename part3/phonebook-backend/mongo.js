@@ -1,45 +1,45 @@
-import dns from "node:dns";
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+import dns from 'node:dns'
+dns.setServers(['8.8.8.8', '1.1.1.1'])
 
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 if (process.argv.length < 3) {
-  console.log("usage: node mongo.js <password> [name] [number]");
-  process.exit(1);
+  console.log('usage: node mongo.js <password> [name] [number]')
+  process.exit(1)
 }
 
-const password = process.argv[2];
+const password = process.argv[2]
 
-const url = `mongodb+srv://techyinterns2021_db_user:${encodeURIComponent(password)}@cluster0.nryvsbm.mongodb.net/phonebookApp?retryWrites=true&w=majority`;
+const url = `mongodb+srv://techyinterns2021_db_user:${encodeURIComponent(password)}@cluster0.nryvsbm.mongodb.net/phonebookApp?retryWrites=true&w=majority`
 
-mongoose.set("strictQuery", false);
-mongoose.connect(url);
+mongoose.set('strictQuery', false)
+mongoose.connect(url)
 
 const personSchema = new mongoose.Schema({
   name: String,
   number: String,
-});
+})
 
-const Person = mongoose.model("Person", personSchema);
+const Person = mongoose.model('Person', personSchema)
 
 if (process.argv.length === 3) {
   Person.find({}).then((result) => {
-    console.log("phonebook:");
+    console.log('phonebook:')
     result.forEach((person) => {
-      console.log(`${person.name} ${person.number}`);
-    });
-    mongoose.connection.close();
-  });
+      console.log(`${person.name} ${person.number}`)
+    })
+    mongoose.connection.close()
+  })
 } else if (process.argv.length === 5) {
   const person = new Person({
     name: process.argv[3],
     number: process.argv[4],
-  });
+  })
 
   person.save().then(() => {
-    console.log(`added ${person.name} number ${person.number} to phonebook`);
-    mongoose.connection.close();
-  });
+    console.log(`added ${person.name} number ${person.number} to phonebook`)
+    mongoose.connection.close()
+  })
 } else {
-  console.log("usage: node mongo.js <password> [name] [number]");
-  mongoose.connection.close();
+  console.log('usage: node mongo.js <password> [name] [number]')
+  mongoose.connection.close()
 }
