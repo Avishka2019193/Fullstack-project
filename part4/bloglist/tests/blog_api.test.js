@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const supertest = require("supertest");
 const app = require("../app");
 const Blog = require("../models/blog");
+const bcrypt = require("bcryptjs");
+const User = require("../models/user");
 
 const api = supertest(app);
 
@@ -22,9 +24,18 @@ const initialBlogs = [
   },
 ];
 
+let rootUser;
+
 beforeEach(async () => {
   await Blog.deleteMany({});
-  await Blog.insertMany(initialBlogs);
+  await User.deleteMany({});
+
+  const passwordHash = await bcrypt.hash("sekret", 10);
+  rootUser = await new User({ username: "root", passwordHash }).save();
+
+  await Blog.insertMany(
+    initialBlogs.map((blog) => ({ ...blog, user: rootUser._id })),
+  );
 });
 
 test("blogs are returned as json", async () => {
@@ -106,6 +117,71 @@ test("blog without url is not added", async () => {
   assert.strictEqual(response.body.length, initialBlogs.length);
 });
 
+test("a blog can be deleted", async () => {
+  const blogsAtStart = (await api.get("/api/blogs")).body;
+  const blogToDelete = blogsAtStart[0];
+
+  await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+  const blogsAtEnd = (await api.get("/api/blogs")).body;
+  const ids = blogsAtEnd.map((blog) => blog.id);
+
+  assert.ok(!ids.includes(blogToDelete.id));
+  assert.strictEqual(blogsAtEnd.length, initialBlogs.length - 1);
+});
+
+test("deleting with a malformed id returns 400", async () => {
+  await api.delete("/api/blogs/not-a-valid-id").expect(400);
+});
+
+test("a blog can be updated", async () => {
+  const blogsAtStart = (await api.get("/api/blogs")).body;
+  const blogToUpdate = blogsAtStart[0];
+
+  const response = await api
+    .put(`/api/blogs/${blogToUpdate.id}`)
+    .send({ likes: blogToUpdate.likes + 1 })
+    .expect(200);
+
+  assert.strictEqual(response.body.likes, blogToUpdate.likes + 1);
+  assert.strictEqual(response.body.title, blogToUpdate.title);
+
+  const blogsAtEnd = (await api.get("/api/blogs")).body;
+  const updated = blogsAtEnd.find((blog) => blog.id === blogToUpdate.id);
+  assert.strictEqual(updated.likes, blogToUpdate.likes + 1);
+});
+
+test("updating a blog that does not exist returns 404", async () => {
+  const nonExistingId = new mongoose.Types.ObjectId().toString();
+
+  await api.put(`/api/blogs/${nonExistingId}`).send({ likes: 1 }).expect(404);
+});
+
+test("updating with a malformed id returns 400", async () => {
+  await api.put("/api/blogs/not-a-valid-id").send({ likes: 1 }).expect(400);
+});
+
+test("blogs include their creator", async () => {
+  const response = await api.get("/api/blogs").expect(200);
+  const blog = response.body[0];
+
+  assert.strictEqual(blog.user.username, "root");
+  assert.strictEqual(blog.user.passwordHash, undefined);
+});
+
+test("a new blog is linked to a user", async () => {
+  const newBlog = {
+    title: "Linked blog",
+    author: "Test Author",
+    url: "https://example.com/linked",
+  };
+
+  const response = await api.post("/api/blogs").send(newBlog).expect(201);
+  assert.strictEqual(response.body.user, rootUser._id.toString());
+
+  const user = await User.findById(rootUser._id);
+  assert.ok(user.blogs.map(String).includes(response.body.id));
+});
 after(async () => {
   await mongoose.connection.close();
 });
