@@ -3,6 +3,7 @@ const Blog = require("../models/blog");
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const config = require("../utils/config");
+const { userExtractor } = require("../utils/middleware");
 
 const getTokenFrom = (request) => {
   const authorization = request.get("authorization");
@@ -17,18 +18,9 @@ blogsRouter.get("/", async (request, response) => {
   response.json(blogs);
 });
 
-blogsRouter.post("/", async (request, response) => {
+blogsRouter.post("/", userExtractor, async (request, response) => {
   const { title, author, url, likes } = request.body;
-
-  const decodedToken = jwt.verify(request.token, config.SECRET);
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: "token invalid" });
-  }
-
-  const user = await User.findById(decodedToken.id);
-  if (!user) {
-    return response.status(401).json({ error: "user not found" });
-  }
+  const user = request.user;
 
   const blog = new Blog({ title, author, url, likes, user: user._id });
 
@@ -57,25 +49,22 @@ blogsRouter.put("/:id", async (request, response) => {
   response.json(updatedBlog);
 });
 
-blogsRouter.delete("/:id", async (request, response) => {
-  const decodedToken = jwt.verify(request.token, config.SECRET);
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: "token invalid" });
-  }
+blogsRouter.delete("/:id", userExtractor, async (request, response) => {
+  const user = request.user;
 
   const blog = await Blog.findById(request.params.id);
   if (!blog) {
     return response.status(204).end();
   }
 
-  if (!blog.user || blog.user.toString() !== decodedToken.id.toString()) {
+  if (!blog.user || blog.user.toString() !== user._id.toString()) {
     return response
       .status(403)
       .json({ error: "only the creator can delete a blog" });
   }
 
   await blog.deleteOne();
-  await User.findByIdAndUpdate(decodedToken.id, { $pull: { blogs: blog._id } });
+  await User.findByIdAndUpdate(user._id, { $pull: { blogs: blog._id } });
 
   response.status(204).end();
 });
